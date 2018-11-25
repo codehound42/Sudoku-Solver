@@ -1,8 +1,5 @@
 (*
-Sudoku Solver using brute-force back-tracking
-
-Inspiration:
-Answer @ https://codereview.stackexchange.com/questions/53752/making-backtracking-sudoku-solver-more-functional
+F# Sudoku Solver through backtracking
 *)
 
 // Types
@@ -22,7 +19,10 @@ let WIDTH_MASK = 8;;
 let HEIGHT_MASK = WIDTH_MASK;;
 [<Literal>]
 let BOX_WIDTH = 3;;
+[<Literal>]
+let BOX_WIDTH_MASK = 2
 
+// Check if row already contains number n
 let isRowValid sudoku row x n =
     let rec checkRow i =
         match i with
@@ -32,6 +32,7 @@ let isRowValid sudoku row x n =
                | Some n' -> if i = x then checkRow (i+1)
                             else n <> n' && checkRow (i+1)
     checkRow 0
+// Check if column already contains number n
 let isColValid sudoku col y n =
     let rec checkCol i =
         match i with
@@ -41,7 +42,6 @@ let isColValid sudoku col y n =
                | Some n' -> if i = y then checkCol (i+1)
                             else n <> n' && checkCol (i+1)
     checkCol 0
-
 // Check 3x3 square does not contain same number
 let isBoxValid sudoku pos n =
     let (x,y) = pos
@@ -49,25 +49,29 @@ let isBoxValid sudoku pos n =
     let dy = y / BOX_WIDTH
     let sq1 = seq {
         yield n
-        for i in [0..2] do
-            for j in [0..2] do
+        for i in [0..BOX_WIDTH_MASK] do
+            for j in [0..BOX_WIDTH_MASK] do
                 let optN = Map.tryFind (i + BOX_WIDTH * dx, j + BOX_WIDTH * dy) sudoku
                 if not (Option.isNone optN) then yield Option.get optN
     }
     let sq2 = Seq.distinct sq1
     Seq.length sq1 = Seq.length sq2
 
+// Check that no violation of the sudoku constraints are violated by adding number n at position pos
 let isSudokuValid sudoku pos n =
     let (x, y) = pos
     isRowValid sudoku y x n
     && isColValid sudoku x y n
     && isBoxValid sudoku pos n
 
+// Compute the next position as the slot adjacent to the right of the current position
+// Continue in next row if has reached end of current row
 let getNextPos pos =
     let (x, y) = pos
     if x + 1 = WIDTH then (0, y+1)
     else (x+1, y)
-    
+
+// All slots have been filled    
 let hasReachedEnd pos =
     let (_, y) = pos
     if y = HEIGHT then true
@@ -90,6 +94,7 @@ let rec solveSudoku (currentPos:Pos) (sudoku:Sudoku) : Solution =
                 None
         Array.tryPick solveCurrentPos [|1..9|]
 
+// Create sudoku map from 2D array
 let createSudoku arr : Sudoku =
     let wm = Array2D.length1 arr - 1
     let hm = Array2D.length2 arr - 1
@@ -102,6 +107,7 @@ let createSudoku arr : Sudoku =
 
     Map.ofSeq sudokuSeq
 
+// Simple function for printing sudoku to the console
 let printSolution solution =
     match solution with
     | None -> printfn "No solution"
