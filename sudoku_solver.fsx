@@ -17,6 +17,7 @@ let HEIGHT = WIDTH;;
 let WIDTH_MASK = 8;;
 [<Literal>]
 let HEIGHT_MASK = WIDTH_MASK;;
+// Let the term "box" denote each of the 3x3 subgrids of the sudoko
 [<Literal>]
 let BOX_WIDTH = 3;;
 [<Literal>]
@@ -42,7 +43,7 @@ let isColValid sudoku col y n =
                | Some n' -> if i = y then checkCol (i+1)
                             else n <> n' && checkCol (i+1)
     checkCol 0
-// Check 3x3 square does not contain same number
+// Check if the box the current position is in contains two of the same numbers
 let isBoxValid sudoku pos n =
     let (x,y) = pos
     let dx = x / BOX_WIDTH
@@ -79,8 +80,6 @@ let hasReachedEnd pos =
 
 // Main backtrack-solving function
 let rec solveSudoku (currentPos:Pos) (sudoku:Sudoku) : Solution =
-    let (x, y) = currentPos
-
     if hasReachedEnd currentPos then
         Some sudoku
     elif Map.containsKey currentPos sudoku then
@@ -88,8 +87,8 @@ let rec solveSudoku (currentPos:Pos) (sudoku:Sudoku) : Solution =
     else
         let solveCurrentPos n =
             if isSudokuValid sudoku currentPos n then
-                let newSudoku = Map.add currentPos n sudoku
-                solveSudoku (getNextPos currentPos) newSudoku
+                Map.add currentPos n sudoku
+                |> solveSudoku (getNextPos currentPos)
             else
                 None
         Array.tryPick solveCurrentPos [|1..9|]
@@ -121,7 +120,7 @@ let printSolution solution =
                         printfn "\n"
 
 // Quick sample test
-// Zero-entries indicate blank slots
+// Zero-entries indicate blank slots/squares
 let solution =
     [[5; 3; 0;  0; 7; 0;  0; 0; 0]
      [6; 0; 0;  1; 9; 5;  0; 0; 0]
